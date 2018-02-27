@@ -2002,16 +2002,11 @@ void r2m_xfer_opbn(thread_ctx_t *thread_ctx, ADDRINT dst, ADDRINT count,
  */
 void r2m_xfer_opb_u(thread_ctx_t *thread_ctx, ADDRINT dst, idft_reg_t src)
 {
-#ifndef USE_CUSTOM_TAG
 	bitmap[VIRT2BYTE(dst)] =
 		(bitmap[VIRT2BYTE(dst)] & ~(BYTE_MASK << VIRT2BIT(dst))) |
 		(((thread_ctx->vcpu.gpr[src] & (VCPU_MASK8 << 1)) >> 1)
 		<< VIRT2BIT(dst));
-#else
-    tag_t src_tag = RTAG[src][1];
 
-    tag_dir_setb(tag_dir, dst, src_tag);
-#endif
 }
 
 /*
@@ -2113,7 +2108,6 @@ void r2m_xfer_opln(thread_ctx_t *thread_ctx,
 		ADDRINT count,
 		ADDRINT eflags)
 {
-#ifndef USE_CUSTOM_TAG
 	if (likely(EFLAGS_DF(eflags) == 0)) {
 		/* EFLAGS.DF = 0 */
 
@@ -2134,28 +2128,6 @@ void r2m_xfer_opln(thread_ctx_t *thread_ctx,
 		else
 			tagmap_clrn(dst - (count << 2) + 1, (count << 2));
 	}
-#else
-    tag_t src_tag[] = R32TAG(GPR_EAX);
-	if (likely(EFLAGS_DF(eflags) == 0)) {
-		/* EFLAGS.DF = 0 */
-
-        for (size_t i = 0; i < (count << 2); i++)
-        {
-            tag_dir_setb(tag_dir, dst+i, src_tag[i%4]);
-
-        }
-	}
-	else {
-		/* EFLAGS.DF = 1 */
-
-        for (size_t i = 0; i < (count << 2); i++)
-        {
-            size_t dst_addr = dst - (count << 2) + 1 + i;
-            tag_dir_setb(tag_dir, dst_addr, src_tag[i%4]);
-
-        }
-	}
-#endif
 }
 
 /*
